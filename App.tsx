@@ -8,7 +8,6 @@ import Sectors from './components/Sectors';
 import MapSection from './components/MapSection';
 import StatsSection from './components/StatsSection';
 import ProjectsSection from './components/ProjectsSection';
-import Pricing from './components/Pricing';
 import FinalCTA from './components/FinalCTA';
 import Footer from './components/Footer';
 
@@ -33,6 +32,9 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (!loading) {
       if (userData) {
+        // Don't auto-redirect from signup page - let user see their credentials first
+        if (currentPage === 'signup') return;
+
         if (isAdmin) {
           setCurrentPage('admin-dashboard');
         } else {
@@ -64,7 +66,6 @@ const AppContent: React.FC = () => {
         <MapSection />
         <StatsSection />
         <ProjectsSection />
-        <Pricing />
         <FinalCTA onContact={() => navigate('signup')} />
       </main>
       <Footer />

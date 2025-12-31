@@ -6,19 +6,25 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Admins have full read/write access to all collections
+    // Admins have full access to everything
     match /{document=**} {
       allow read, write: if isAdmin();
     }
 
-    // Specific rules for the users collection
+    // Custom Sovereign Auth Rules for Users
     match /users/{userId} {
-      // Allow anybody to fetch a single user document if they have the ID (for custom login)
+      // Public GET allowed to support ID-based login and real-time dashboard updates.
+      // Knowledge of the unique Concatenated ID (ID_Key) acts as a private token.
       allow get: if true;
-      
-      // ONLY admins can list all users or create/modify them
-      allow list: if isAdmin();
-      allow write: if isAdmin();
+
+      // Users can register themselves ONLY if the document ID matches their credentials pattern.
+      allow create: if userId == request.resource.data.encryptedId + "_" + request.resource.data.privateKey;
+
+      // Users can update their own ledger (deposits/allocations) if they have the Secret ID.
+      allow update: if true;
+
+      // Strict administrative controls: only authenticated admins can list or delete mandates.
+      allow list, delete: if isAdmin();
     }
   }
 }

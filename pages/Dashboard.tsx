@@ -23,6 +23,7 @@ const Dashboard: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
   const [activeTab, setActiveTab] = useState('Portfolio Overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [liveData, setLiveData] = useState<any>(userData);
+  const [depositMethod, setDepositMethod] = useState<'selection' | 'local' | 'crypto'>('selection');
 
   useEffect(() => {
     if (userData?.id) {
@@ -37,6 +38,8 @@ const Dashboard: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
 
   const navItems = [
     { name: 'Portfolio Overview' },
+    { name: 'Sovereign Deposit' },
+    { name: 'New Allocation' },
     { name: 'Reports & Audits' },
   ];
 
@@ -48,8 +51,10 @@ const Dashboard: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
     orbitalEconomy: 0
   };
 
+  const cashBalance = liveData?.cashBalance || 0;
+  const growthRate = liveData?.monthlyGrowth || 24.5;
   const totalValue = liveData?.totalAssetValue || 0;
-  const hasFunds = totalValue > 0;
+  const hasFunds = totalValue > 0 || cashBalance > 0;
 
   return (
     <div className="min-h-screen bg-novarc-dark text-white flex flex-col lg:flex-row">
@@ -159,9 +164,14 @@ const Dashboard: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
               <StatCard label="Total Asset Value" value={`$${totalValue?.toLocaleString()}`} change={hasFunds ? "4.2%" : undefined} isPositive={true} />
-              <StatCard label="Annualized Yield" value={hasFunds ? "12.4%" : "0.0%"} change={hasFunds ? "0.8%" : undefined} isPositive={true} />
-              <StatCard label="Realized Gains" value={hasFunds ? "$18,490,000" : "$0"} />
-              <StatCard label="Direct Stakes" value={hasFunds ? "12 Entities" : "0 Entities"} />
+              <StatCard label="Liquid Capital" value={`$${cashBalance?.toLocaleString()}`} />
+              <StatCard
+                label="Monthly Growth"
+                value={totalValue > cashBalance ? `${growthRate.toFixed(1)}%` : "0.0%"}
+                change={totalValue > cashBalance ? "1.2%" : undefined}
+                isPositive={true}
+              />
+              <StatCard label="Direct Stakes" value={totalValue > cashBalance ? "12 Entities" : "0 Entities"} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -212,10 +222,10 @@ const Dashboard: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
                   <h3 className="text-[12px] uppercase tracking-[0.3em] font-bold text-white/60 mb-8">Asset Allocation</h3>
                   <div className="space-y-6">
                     {[
-                      { label: 'Energy & Transition', value: Math.round((balances.energy / totalValue) * 100) || 0, color: 'bg-novarc-accent' },
-                      { label: 'Frontier Tech', value: Math.round((balances.frontierTech / totalValue) * 100) || 0, color: 'bg-indigo-500' },
-                      { label: 'Global Real Estate', value: Math.round((balances.realEstate / totalValue) * 100) || 0, color: 'bg-emerald-500' },
-                      { label: 'Orbital Economy', value: Math.round((balances.orbitalEconomy / totalValue) * 100) || 0, color: 'bg-white/20' },
+                      { label: 'Energy & Transition', value: Math.round((balances.energy / (totalValue - cashBalance)) * 100) || 0, color: 'bg-novarc-accent' },
+                      { label: 'Frontier Tech', value: Math.round((balances.frontierTech / (totalValue - cashBalance)) * 100) || 0, color: 'bg-indigo-500' },
+                      { label: 'Global Real Estate', value: Math.round((balances.realEstate / (totalValue - cashBalance)) * 100) || 0, color: 'bg-emerald-500' },
+                      { label: 'Orbital Economy', value: Math.round((balances.orbitalEconomy / (totalValue - cashBalance)) * 100) || 0, color: 'bg-white/20' },
                     ].map((item) => (
                       <div key={item.label} className="space-y-2">
                         <div className="flex justify-between text-[10px] uppercase tracking-widest">
@@ -278,6 +288,333 @@ const Dashboard: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </>
+        ) : activeTab === 'Sovereign Deposit' ? (
+          <>
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12 lg:mb-16">
+              <div>
+                <span className="text-novarc-accent text-[11px] font-bold uppercase tracking-[0.5em] block mb-2">Protocol Authorization</span>
+                <h1 className="text-3xl md:text-5xl font-light tracking-tighter">Sovereign Deposit</h1>
+              </div>
+              {depositMethod !== 'selection' && (
+                <button
+                  onClick={() => setDepositMethod('selection')}
+                  className="bg-white/5 border border-white/10 px-6 py-2 text-[10px] uppercase tracking-widest hover:bg-white/10 transition-colors"
+                >
+                  ← Back to Selection
+                </button>
+              )}
+            </header>
+
+            {depositMethod === 'selection' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl">
+                <div
+                  onClick={() => setDepositMethod('local')}
+                  className="group bg-white/5 border border-white/10 p-10 rounded-sm cursor-pointer hover:border-novarc-accent/50 transition-all hover:bg-white/[0.07]"
+                >
+                  <div className="w-12 h-12 bg-novarc-accent/20 rounded-full flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                    <svg className="w-6 h-6 text-novarc-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-light mb-4 text-white">Local Institutional Transfer</h3>
+                  <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] leading-relaxed">
+                    Direct wire transfer via Al-Falak Corporate Treasury. Supported in AED and USD.
+                  </p>
+                </div>
+
+                <div
+                  onClick={() => setDepositMethod('crypto')}
+                  className="group bg-white/5 border border-white/10 p-10 rounded-sm cursor-pointer hover:border-indigo-500/50 transition-all hover:bg-white/[0.07]"
+                >
+                  <div className="w-12 h-12 bg-indigo-500/20 rounded-full flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                    <svg className="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-light mb-4 text-white">Digital Asset Settlement</h3>
+                  <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] leading-relaxed">
+                    Instant liquidity via USDT (ERC20/TRC20) or BTC sovereign gateway.
+                  </p>
+                </div>
+              </div>
+            ) : depositMethod === 'local' ? (
+              <div className="max-w-2xl bg-white/5 border border-white/10 p-10 rounded-sm">
+                <h3 className="text-[12px] uppercase tracking-[0.3em] font-bold text-white/60 mb-8 pb-4 border-b border-white/5">Banking Credentials</h3>
+                <div className="space-y-8">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[9px] uppercase tracking-[0.3em] text-novarc-accent font-bold">Bank Name</label>
+                      <div className="text-sm text-white">First Abu Dhabi Bank (FAB)</div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] uppercase tracking-[0.3em] text-novarc-accent font-bold">Account Holder</label>
+                      <div className="text-sm text-white font-medium uppercase tracking-wider">Al-Falak Capital LLC</div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[9px] uppercase tracking-[0.3em] text-novarc-accent font-bold">IBAN (AED/USD)</label>
+                    <div className="bg-black/40 p-4 font-mono text-sm tracking-widest border border-white/5">AE45 0010 0000 1234 5678 9012</div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[9px] uppercase tracking-[0.3em] text-novarc-accent font-bold">SWIFT / BIC</label>
+                      <div className="text-sm text-white font-mono uppercase">FABUAEAD</div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] uppercase tracking-[0.3em] text-novarc-accent font-bold">Reference Code</label>
+                      <div className="text-sm text-emerald-400 font-mono uppercase tracking-widest">{liveData?.encryptedId?.split('-').pop()}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-12 pt-8 border-t border-white/5 space-y-6">
+                  <p className="text-[9px] text-white/20 uppercase tracking-[0.2em] leading-loose italic">
+                    Note: Institutional transfers undergo 12-stage sovereign verification. Estimated settlement: 2-4 business hours.
+                  </p>
+
+                  <div className="bg-white/5 p-6 rounded-sm space-y-4">
+                    <label className="text-[10px] uppercase tracking-[0.3em] text-white/60 font-medium">Record Initiated Transfer</label>
+                    <div className="flex gap-4">
+                      <input
+                        type="number"
+                        placeholder="Amount (USD)"
+                        id="local-deposit-input"
+                        className="flex-1 bg-black/40 border border-white/10 px-4 py-2 text-sm text-white focus:border-novarc-accent outline-none"
+                      />
+                      <button
+                        onClick={async (e) => {
+                          const val = (document.getElementById('local-deposit-input') as HTMLInputElement).value;
+                          const amount = parseFloat(val);
+                          if (!amount || amount <= 0) return;
+
+                          const btn = e.currentTarget;
+                          btn.disabled = true;
+                          btn.innerText = "Processing...";
+
+                          try {
+                            const { updateDoc, doc } = await import('firebase/firestore');
+                            await updateDoc(doc(db, 'users', liveData.id), {
+                              cashBalance: (liveData.cashBalance || 0) + amount,
+                              totalAssetValue: (liveData.totalAssetValue || 0) + amount
+                            });
+                            alert(`Deposit of $${amount.toLocaleString()} recorded. Your liquid balance will be updated.`);
+                            setDepositMethod('selection');
+                            setActiveTab('Portfolio Overview');
+                          } catch (err) {
+                            alert("Failed to record deposit.");
+                          } finally {
+                            btn.disabled = false;
+                            btn.innerText = "Record Transfer";
+                          }
+                        }}
+                        className="bg-novarc-accent text-white px-6 py-2 text-[10px] uppercase tracking-widest font-bold hover:brightness-110"
+                      >
+                        Record Transfer
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="max-w-2xl bg-white/5 border border-white/10 p-10 rounded-sm">
+                <h3 className="text-[12px] uppercase tracking-[0.3em] font-bold text-white/60 mb-8 pb-4 border-b border-white/5">Digital Vault Addresses</h3>
+                <div className="space-y-8">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <label className="text-[9px] uppercase tracking-[0.3em] text-indigo-400 font-bold">USDT (ERC20 / TRC20)</label>
+                      <span className="text-[8px] text-white/30 uppercase tracking-widest">Recommended</span>
+                    </div>
+                    <div className="bg-black/40 p-4 font-mono text-xs tracking-wider border border-white/5 break-all">0x71C7656EC7ab88b098defB751B7401B5f6d8976F</div>
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[9px] uppercase tracking-[0.3em] text-indigo-400 font-bold">Bitcoin (BTC) Network</label>
+                    <div className="bg-black/40 p-4 font-mono text-xs tracking-wider border border-white/5 break-all">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</div>
+                  </div>
+                </div>
+                <div className="mt-12 p-6 bg-indigo-500/5 border border-indigo-500/10 space-y-6">
+                  <p className="text-[9px] text-indigo-300 uppercase tracking-[0.2em] leading-loose">
+                    Security Update: Cold storage architecture active. Large settlements may require additional MFA authorization via your institutional representative.
+                  </p>
+
+                  <div className="bg-black/40 p-6 rounded-sm space-y-4 border border-indigo-500/10">
+                    <label className="text-[10px] uppercase tracking-[0.3em] text-white/60 font-medium">Confirm Asset Placement</label>
+                    <div className="flex gap-4">
+                      <input
+                        type="number"
+                        placeholder="USD Equivalent"
+                        id="crypto-deposit-input"
+                        className="flex-1 bg-black/40 border border-white/10 px-4 py-2 text-sm text-white focus:border-indigo-400 outline-none"
+                      />
+                      <button
+                        onClick={async (e) => {
+                          const val = (document.getElementById('crypto-deposit-input') as HTMLInputElement).value;
+                          const amount = parseFloat(val);
+                          if (!amount || amount <= 0) return;
+
+                          const btn = e.currentTarget;
+                          btn.disabled = true;
+                          btn.innerText = "Processing...";
+
+                          try {
+                            const { updateDoc, doc } = await import('firebase/firestore');
+                            await updateDoc(doc(db, 'users', liveData.id), {
+                              cashBalance: (liveData.cashBalance || 0) + amount,
+                              totalAssetValue: (liveData.totalAssetValue || 0) + amount
+                            });
+                            alert(`Digital asset placement of $${amount.toLocaleString()} confirmed.`);
+                            setDepositMethod('selection');
+                            setActiveTab('Portfolio Overview');
+                          } catch (err) {
+                            alert("Failed to confirm placement.");
+                          } finally {
+                            btn.disabled = false;
+                            btn.innerText = "Confirm Placement";
+                          }
+                        }}
+                        className="bg-indigo-600 text-white px-6 py-2 text-[10px] uppercase tracking-widest font-bold hover:brightness-110"
+                      >
+                        Confirm Placement
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        ) : activeTab === 'New Allocation' ? (
+          <>
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12 lg:mb-16">
+              <div>
+                <span className="text-novarc-accent text-[11px] font-bold uppercase tracking-[0.5em] block mb-2">Capital Deployment</span>
+                <h1 className="text-3xl md:text-5xl font-light tracking-tighter">New Allocation</h1>
+              </div>
+            </header>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              <div className="space-y-8">
+                <div className="bg-white/5 border border-white/10 p-8 rounded-sm">
+                  <h3 className="text-[12px] uppercase tracking-[0.3em] font-bold text-white/60 mb-6">Available Liquid Capital</h3>
+                  <div className="text-4xl font-light text-novarc-accent tracking-tighter">${cashBalance.toLocaleString()}</div>
+                  <p className="text-[10px] text-white/30 uppercase tracking-widest mt-4">Unallocated sovereign funds ready for deployment</p>
+                </div>
+
+                <div className="bg-white/5 border border-white/10 p-8 rounded-sm space-y-6">
+                  <h3 className="text-[12px] uppercase tracking-[0.3em] font-bold text-white/60">Sovereign Distribution Engine</h3>
+                  <p className="text-[10px] text-white/30 uppercase tracking-widest leading-loose">
+                    Utilize our proprietary auto-allocation protocol to distribute liquid capital across authorized sectors based on current geopolitical risk metrics.
+                  </p>
+                  <button
+                    disabled={cashBalance <= 0}
+                    onClick={async (e) => {
+                      const btn = e.currentTarget;
+                      btn.disabled = true;
+                      btn.innerText = "Processing Protocol...";
+
+                      try {
+                        const amount = cashBalance;
+                        const dist = {
+                          energy: amount * 0.25,
+                          transition: amount * 0.15,
+                          frontierTech: amount * 0.10,
+                          realEstate: amount * 0.40,
+                          orbitalEconomy: amount * 0.10
+                        };
+
+                        const newBalances = {
+                          energy: (liveData.balances?.energy || 0) + dist.energy,
+                          transition: (liveData.balances?.transition || 0) + dist.transition,
+                          frontierTech: (liveData.balances?.frontierTech || 0) + dist.frontierTech,
+                          realEstate: (liveData.balances?.realEstate || 0) + dist.realEstate,
+                          orbitalEconomy: (liveData.balances?.orbitalEconomy || 0) + dist.orbitalEconomy
+                        };
+
+                        const { updateDoc, doc } = await import('firebase/firestore');
+                        await updateDoc(doc(db, 'users', liveData.id), {
+                          balances: newBalances,
+                          cashBalance: 0,
+                          totalAssetValue: liveData.totalAssetValue // Keep same, it's just moving from cash to sectors
+                        });
+                        alert("Auto-allocation protocol successfully executed.");
+                        setActiveTab('Portfolio Overview');
+                      } catch (err) {
+                        alert("Allocation failed.");
+                      } finally {
+                        btn.disabled = false;
+                        btn.innerText = "Auto-Allocate Capital";
+                      }
+                    }}
+                    className="w-full bg-indigo-600 text-white py-4 text-[10px] uppercase tracking-[0.5em] font-bold hover:brightness-110 transition-all disabled:opacity-50"
+                  >
+                    Auto-Allocate Capital
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white/5 border border-white/10 p-10 rounded-sm">
+                <h3 className="text-[12px] uppercase tracking-[0.3em] font-bold text-white/60 mb-10">Manual Sector Deployment</h3>
+                <div className="space-y-8">
+                  {[
+                    { id: 'energy', label: 'Energy & Transition' },
+                    { id: 'frontierTech', label: 'Frontier Tech' },
+                    { id: 'realEstate', label: 'Global Real Estate' },
+                    { id: 'orbitalEconomy', label: 'Orbital Economy' },
+                    { id: 'transition', label: 'Legacy Transition' }
+                  ].map((sector) => (
+                    <div key={sector.id} className="space-y-2">
+                      <label className="text-[9px] uppercase tracking-[0.3em] text-novarc-accent font-bold">{sector.label}</label>
+                      <input
+                        type="number"
+                        id={`alloc-${sector.id}`}
+                        placeholder="0.00"
+                        className="w-full bg-black/40 border border-white/10 p-4 text-white text-sm focus:border-novarc-accent outline-none"
+                      />
+                    </div>
+                  ))}
+
+                  <button
+                    onClick={async (e) => {
+                      const btn = e.currentTarget;
+                      const sectorIds = ['energy', 'frontierTech', 'realEstate', 'orbitalEconomy', 'transition'];
+                      let totalAlloc = 0;
+                      const updates: any = { ...liveData.balances };
+
+                      sectorIds.forEach(id => {
+                        const val = parseFloat((document.getElementById(`alloc-${id}`) as HTMLInputElement).value) || 0;
+                        updates[id] = (updates[id] || 0) + val;
+                        totalAlloc += val;
+                      });
+
+                      if (totalAlloc <= 0) return;
+                      if (totalAlloc > cashBalance) {
+                        alert("Insufficient liquid capital for this allocation.");
+                        return;
+                      }
+
+                      btn.disabled = true;
+                      btn.innerText = "Deploying Capital...";
+
+                      try {
+                        const { updateDoc, doc } = await import('firebase/firestore');
+                        await updateDoc(doc(db, 'users', liveData.id), {
+                          balances: updates,
+                          cashBalance: cashBalance - totalAlloc
+                        });
+                        alert("Manual deployment successful.");
+                        setActiveTab('Portfolio Overview');
+                      } catch (err) {
+                        alert("Deployment failed.");
+                      } finally {
+                        btn.disabled = false;
+                        btn.innerText = "Deploy Capital";
+                      }
+                    }}
+                    className="w-full bg-novarc-accent text-white py-5 text-[11px] uppercase tracking-[0.5em] font-bold hover:brightness-110 transition-all shadow-xl"
+                  >
+                    Deploy Capital
+                  </button>
+                </div>
               </div>
             </div>
           </>

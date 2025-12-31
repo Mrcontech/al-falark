@@ -16,9 +16,9 @@ interface AuthContextType {
     user: FirebaseUser | null;
     userData: any | null;
     loading: boolean;
-    isAdmin: boolean;
     loginAsAdmin: (email: string, pass: string) => Promise<void>;
     loginAsUser: (encryptedId: string, privateKey: string) => Promise<void>;
+    signupAsUser: (institution: string, email: string) => Promise<{ encryptedId: string, privateKey: string }>;
     logout: () => Promise<void>;
 }
 
@@ -76,6 +76,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('al_falak_user', JSON.stringify(data));
     };
 
+    const signupAsUser = async (institution: string, email: string) => {
+        // Generate credentials
+        const encryptedId = 'SOVEREIGN-ID-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        const privateKey = Math.random().toString(36).substring(2, 12).toUpperCase();
+        const docId = `${encryptedId}_${privateKey}`;
+
+        const data = {
+            institution,
+            email,
+            encryptedId,
+            privateKey,
+            balances: {
+                energy: 0,
+                transition: 0,
+                frontierTech: 0,
+                realEstate: 0,
+                orbitalEconomy: 0
+            },
+            cashBalance: 0,
+            totalAssetValue: 0,
+            monthlyGrowth: 24.5,
+            createdAt: new Date().toISOString()
+        };
+
+        const { setDoc } = await import('firebase/firestore');
+        await setDoc(doc(db, 'users', docId), data);
+
+        setUserData({ id: docId, ...data });
+        setIsAdmin(false);
+        localStorage.setItem('al_falak_user', JSON.stringify({ id: docId, ...data }));
+
+        return { encryptedId, privateKey };
+    };
+
     const logout = async () => {
         await signOut(auth);
         localStorage.removeItem('al_falak_user');
@@ -91,6 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             isAdmin,
             loginAsAdmin,
             loginAsUser,
+            signupAsUser,
             logout
         }}>
             {children}
