@@ -21,7 +21,11 @@ service cloud.firestore {
       allow create: if userId == request.resource.data.encryptedId + "_" + request.resource.data.privateKey;
 
       // Users can update their own ledger (deposits/allocations) if they have the Secret ID.
-      allow update: if true;
+      // We ensure the sensitive credentials (encryptedId/privateKey) cannot be modified by the user.
+      allow update: if (
+        request.resource.data.encryptedId == resource.data.encryptedId && 
+        request.resource.data.privateKey == resource.data.privateKey
+      ) || isAdmin();
 
       // Strict administrative controls: only authenticated admins can list or delete mandates.
       allow list, delete: if isAdmin();

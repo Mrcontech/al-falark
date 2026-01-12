@@ -96,7 +96,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             },
             cashBalance: 0,
             totalAssetValue: 0,
-            monthlyGrowth: 24.5,
+            principalInvested: 0,
+            monthlyGrowth: 24,
+            transactions: [],
             createdAt: new Date().toISOString()
         };
 
